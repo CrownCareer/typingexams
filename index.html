@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>Official Typing Exam System - Final</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        :root { --blue: #0056b3; --green: #28a745; --red: #dc3545; --bg: #f4f7f6; --teal: #17a2b8; }
+        html, body { height: 100%; margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); overflow-x: hidden; }
+        .container { display: flex; flex-direction: column; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .box { background: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        
+        .auth-card { max-width: 400px; margin: 50px auto; text-align: center; border-top: 5px solid var(--blue); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .btn-main { background: var(--blue); color: white; padding: 12px; border: none; border-radius: 5px; width: 100%; cursor: pointer; font-weight: bold; }
+        .msg { font-size: 13px; margin: 10px 0; padding: 8px; border-radius: 4px; display: none; }
+        .msg-err { background: #f8d7da; color: #721c24; }
+        .msg-ok { background: #d4edda; color: #155724; }
+
+        .result-header { color: #004085; text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .card { padding: 12px; border: 1px solid #ddd; background: #fff; border-radius: 8px; font-size: 14px; }
+        .card h4 { margin: -12px -12px 10px -12px; padding: 10px; font-size: 15px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #eee; }
+        .c-green h4 { color: #28a745; background: #f8fff9; }
+        .c-orange h4 { color: #d35400; background: #fffaf0; }
+        .c-red h4 { color: #dc3545; background: #fff5f5; }
+        .card p { margin: 10px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 5px;}
+        .status-banner { background: var(--teal); color: white; text-align: center; padding: 15px; border-radius: 8px; font-size: 22px; font-weight: bold; margin: 20px 0; display: flex; justify-content: center; align-items: center; gap: 20px;}
+        .status-tag { background: white; color: var(--green); padding: 5px 25px; border-radius: 5px; }
+
+        #passage-stable { font-size: 24px; line-height: 1.8; height: 280px; overflow-y: auto; text-align: justify; user-select: none; margin-bottom: 20px; }
+        .input-box { border: 2px solid var(--blue); border-radius: 8px; padding: 15px; background: #fff; margin-top: 10px; }
+        textarea { width: 100%; height: 110px; font-size: 20px; border: none; outline: none; resize: none; font-family: inherit; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .edit-btn { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .error-highlight { background-color: #ffcccc; color: #cc0000; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="page-login" class="box auth-card">
+        <h2 style="color: var(--blue);">লগইন করুন</h2>
+        <input type="text" id="login-user" placeholder="Gmail (ইউজারনেম)">
+        <input type="password" id="login-pass" placeholder="পাসওয়ার্ড">
+        <button class="btn-main" onclick="doLogin()">লগইন</button>
+        <p><a href="#" onclick="showPage('page-recover')">পাসওয়ার্ড ভুলে গেছেন?</a></p>
+        <p>অ্যাকাউন্ট নেই? <a href="#" onclick="showPage('page-signup')">রেজিস্ট্রেশন করুন</a></p>
+        <hr><button onclick="showPage('page-admin-auth')" style="background:none; border:none; color:silver; cursor:pointer; font-size:10px;">Admin</button>
+    </div>
+
+    <div id="page-recover" class="box auth-card hidden">
+        <h2 style="color: var(--blue);">পাসওয়ার্ড উদ্ধার</h2>
+        <input type="text" id="recover-email" placeholder="আপনার নিবন্ধিত Gmail দিন">
+        <button class="btn-main" onclick="doRecover()">পাসওয়ার্ড দেখুন</button>
+        <button onclick="showPage('page-login')" style="margin-top:10px; border:none; background:none; color:gray; cursor:pointer;">লগইন পেজে ফিরুন</button>
+    </div>
+
+    <div id="page-signup" class="box auth-card hidden">
+        <h2 style="color: var(--green);">রেজিস্ট্রেশন</h2>
+        <div id="sign-inputs">
+            <input type="text" id="sign-name" placeholder="আপনার নাম">
+            <input type="text" id="sign-user" placeholder="Gmail (English Only)">
+            <input type="password" id="sign-pass" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)">
+            <button class="btn-main" style="background: var(--green);" onclick="doSignup()">ভেরিফিকেশন কোড পাঠান</button>
+        </div>
+        <div id="verify-div" class="hidden">
+            <p style="font-size:12px; color:var(--blue);">আপনার জিমেইলে ৪ ডিজিটের কোড পাঠানো হয়েছে।</p>
+            <input type="text" id="verify-code" placeholder="৪ ডিজিটের কোডটি দিন">
+            <button class="btn-main" style="background: var(--teal);" onclick="verifyAndFinish()">ভেরিফাই ও সাইন আপ</button>
+        </div>
+        <p><a href="#" onclick="showPage('page-login')">লগইন করুন</a></p>
+    </div>
+
+    <div id="page-admin-auth" class="box auth-card hidden">
+        <h2 style="color: var(--blue);">Admin Login</h2>
+        <input type="password" id="admin-entry-pass" placeholder="এডমিন পাসওয়ার্ড দিন">
+        <button class="btn-main" onclick="checkAdminAccess()">প্রবেশ করুন</button>
+        <button onclick="showPage('page-login')" style="margin-top:10px; background:none; border:none; color:gray; cursor:pointer;">ফিরে যান</button>
+    </div>
+
+    <div id="page-exam" class="hidden">
+        <div class="box" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>👤 নাম: <b><span id="display-name"></span></b></div>
+            <div style="color: var(--red); font-size: 20px; font-weight: bold;">সময়: <span id="timer">10:00</span></div>
+        </div>
+        <div id="passage-stable" class="box"><div id="p-text"></div></div>
+        <div class="input-box"><textarea id="t-input" placeholder="Bijoy অথবা Unicode যে কোনো পদ্ধতিতে টাইপ করুন..." oninput="startCount()" onpaste="return false;"></textarea></div>
+        <div style="text-align: right; margin-top: 15px;"><button class="btn-main" style="width: auto; background: var(--green); padding: 10px 40px;" onclick="finishExam()">Go to Finish</button></div>
+    </div>
+
+    <div id="page-result" class="box hidden">
+        <div class="result-header">🔍 টাইপিং ফলাফল ও বিস্তারিত</div>
+        <div class="result-grid">
+            <div class="card c-green">
+                <h4>তারিখ, ভাষা, সময়</h4>
+                <p><span>🗓️ তারিখ:</span> <span id="r-date"></span></p>
+                <p><span>👤 ভাষা:</span> <span id="r-lang">English</span></p>
+                <p><span>⏱️ মোট সময়: 10:00</span></p>
+                <p><span>⏳ ব্যয়িত সময়:</span> <span id="r-time-taken"></span></p>
+            </div>
+            <div class="card c-orange">
+                <h4>দক্ষতা, গতি, গণনা</h4>
+                <p><span>🚀 WPM:</span> <b id="r-wpm"></b></p>
+                <p><span>🎯 Accuracy:</span> <b id="r-acc"></b></p>
+                <p><span>⌨️ টাইপ শব্দ:</span> <span id="r-words"></span></p>
+                <p style="border:none; color:gray; font-size:11px;">ƒ গণনা: 5 Stroke = 1 Word হিসেবে</p>
+            </div>
+            <div class="card c-red">
+                <h4>বিশ্লেষণ</h4>
+                <p><span>📊 Character:</span> <span id="r-char"></span></p>
+                <p><span>✅ সঠিক Character:</span> <span id="r-cor"></span></p>
+                <p><span>❌ ভুল শব্দ:</span> <span id="r-wrong"></span></p>
+                <p><span>📉 ভুলের হার:</span> <span id="r-err"></span></p>
+            </div>
+        </div>
+        <div class="status-banner">🌟 ফলাফল: <div class="status-tag" id="r-status">PASS</div></div>
+        <div style="margin-top:20px;">
+            <div style="font-weight:bold; margin-bottom:5px;">Writing Part (আপনার অংশ):</div>
+            <div id="user-compare-text" style="padding:15px; border:1px solid #ddd; background:#f9f9f9; line-height:1.8; font-size:18px; border-radius:5px; margin-bottom:15px;"></div>
+            
+            <div style="font-weight:bold; margin-bottom:5px;">Main Passage (মূল অনুচ্ছেদ):</div>
+            <div id="original-text-result" style="padding:15px; border:1px solid #ddd; background:#fff; line-height:1.8; font-size:18px; border-radius:5px; color:#444;"></div>
+        </div>
+        <center><button class="btn-main" style="width: 200px; margin-top:20px;" onclick="location.reload()">আবার চেষ্টা করুন</button></center>
+    </div>
+
+    <div id="page-admin" class="box hidden">
+        <h2 style="color:var(--blue)">Admin Panel</h2>
+        <div class="box">
+            <h4>প্যাসেজ এডিট:</h4>
+            <textarea id="adm-text" style="height: 60px; width:100%; border:1px solid #ddd;"></textarea><br>
+            <button class="btn-main" style="width: auto;" onclick="saveTxt()">Save Passage</button>
+        </div>
+        <table id="adm-table-container">
+            <thead><tr><th>নাম</th><th>ইউজার</th><th>পাসওয়ার্ড</th><th>মেয়াদ</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adm-table"></tbody>
+        </table>
+        <button class="btn-main" style="background:#666; margin-top:20px; width:auto" onclick="location.reload()">Logout Admin</button>
+    </div>
+</div>
+
+<script>
+    let users = JSON.parse(localStorage.getItem('bcc_final_users')) || [];
+    let passage = localStorage.getItem('bcc_final_text') || "The quick brown fox jumps over the lazy dog.";
+    let adminPass = "admin123";
+    let timeLeft = 600, timerOn = false, timerInt, generatedCode, tempUser;
+    
+    document.getElementById('p-text').innerText = passage;
+
+    function showPage(id) {
+        document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function doLogin() {
+        const u = document.getElementById('login-user').value.toLowerCase().trim();
+        const p = document.getElementById('login-pass').value;
+        const found = users.find(x => x.user === u && x.pass === p);
+        if(found) {
+            document.getElementById('display-name').innerText = found.name;
+            showPage('page-exam');
+        } else alert("ভুল তথ্য!");
+    }
+
+    function doSignup() {
+        const n = document.getElementById('sign-name').value;
+        const u = document.getElementById('sign-user').value.toLowerCase().trim();
+        const p = document.getElementById('sign-pass').value;
+        if(!u.endsWith("@gmail.com")) return alert("শুধুমাত্র Gmail ব্যবহার করুন!");
+        generatedCode = Math.floor(1000 + Math.random() * 9000);
+        tempUser = {name: n, user: u, pass: p};
+        alert("ভেরিফিকেশন কোড: " + generatedCode);
+        document.getElementById('sign-inputs').classList.add('hidden');
+        document.getElementById('verify-div').classList.remove('hidden');
+    }
+
+    function verifyAndFinish() {
+        const code = document.getElementById('verify-code').value;
+        if(code === generatedCode.toString()) {
+            let exp = new Date(); exp.setDate(exp.getDate() + 30);
+            users.push({...tempUser, expiry: exp.getTime()});
+            localStorage.setItem('bcc_final_users', JSON.stringify(users));
+            location.reload();
+        } else alert("ভুল কোড!");
+    }
+
+    function doRecover() {
+        const email = document.getElementById('recover-email').value.toLowerCase().trim();
+        const found = users.find(x => x.user === email);
+        if(found) alert("আপনার পাসওয়ার্ড: " + found.pass);
+        else alert("এই ইমেইলটি নিবন্ধিত নয়!");
+    }
+
+    function checkAdminAccess() {
+        if(document.getElementById('admin-entry-pass').value === adminPass) {
+            document.getElementById('adm-text').value = passage;
+            showPage('page-admin');
+        } else alert("ভুল এডমিন পাসওয়ার্ড!");
+    }
+
+    function startCount() {
+        if(!timerOn) {
+            timerOn = true;
+            timerInt = setInterval(() => {
+                timeLeft--;
+                let m = Math.floor(timeLeft/60), s = timeLeft%60;
+                document.getElementById('timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if(timeLeft <= 0) finishExam();
+            }, 1000);
+        }
+    }
+
+    function finishExam() {
+        clearInterval(timerInt);
+        const inp = document.getElementById('t-input').value;
+        const pWords = passage.trim().split(/\s+/);
+        const iWords = inp.trim().split(/\s+/);
+        
+        let correctChars = 0;
+        let wrongWordsCount = 0;
+        let comparisonHTML = "";
+
+        pWords.forEach((word, idx) => {
+            const userWord = iWords[idx] || "";
+            if (userWord === word && word !== "") {
+                comparisonHTML += `<span>${userWord} </span>`;
+                correctChars += word.length + 1; 
+            } else if (userWord !== "") {
+                wrongWordsCount++;
+                comparisonHTML += `<span class="error-highlight">${userWord}</span> `;
+            }
+        });
+
+        const timeSpentSeconds = 600 - timeLeft;
+        const elapsedMins = Math.max(timeSpentSeconds / 60, 0.01);
+        const wpm = ((inp.length / 5) / elapsedMins).toFixed(2);
+        const accuracy = inp.length > 0 ? Math.round((correctChars / inp.length) * 100) : 0;
+
+        document.getElementById('r-date').innerText = new Date().toLocaleDateString();
+        document.getElementById('r-time-taken').innerText = `${Math.floor(timeSpentSeconds/60)}:${(timeSpentSeconds%60).toString().padStart(2,'0')}`;
+        document.getElementById('r-wpm').innerText = wpm;
+        document.getElementById('r-acc').innerText = (accuracy > 100 ? 100 : accuracy) + "%";
+        document.getElementById('r-words').innerText = iWords.filter(w => w !== "").length;
+        document.getElementById('r-char').innerText = inp.length;
+        document.getElementById('r-cor').innerText = correctChars;
+        document.getElementById('r-wrong').innerText = wrongWordsCount;
+        document.getElementById('r-err').innerText = (100 - accuracy < 0 ? 0 : 100 - accuracy) + "%";
+        
+        document.getElementById('user-compare-text').innerHTML = comparisonHTML;
+        document.getElementById('original-text-result').innerText = passage;
+        showPage('page-result');
+    }
+
+    function saveTxt() {
+        localStorage.setItem('bcc_final_text', document.getElementById('adm-text').value);
+        location.reload();
+    }
+</script>
+</body>
+</html>
