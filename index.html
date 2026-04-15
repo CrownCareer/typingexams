@@ -132,8 +132,11 @@
                 <div>
                     <label>পরীক্ষার সময়:</label>
                     <select id="adm-time">
+                        <option value="300">১ মিনিট</option>
+                        <option value="300">৩ মিনিট</option>
                         <option value="300">৫ মিনিট</option>
-                        <option value="600">১০ মিনিট</option>
+                        <option value="300">১০ মিনিট</option>
+                        <option value="600">২০ মিনিট</option>
                     </select>
                 </div>
                 <div>
@@ -158,7 +161,7 @@
     (function() { emailjs.init("YOUR_PUBLIC_KEY"); })();
 
     let users = JSON.parse(localStorage.getItem('bcc_final_users')) || [];
-    let passage = localStorage.getItem('bcc_final_text') || "The quick brown fox jumps over the lazy dog.";
+    let passage = localStorage.getItem('bcc_final_text') || "প্যাসেজ এখানে যুক্ত করুন।";
     let examDuration = parseInt(localStorage.getItem('bcc_exam_time')) || 300; 
     let minWPM = parseInt(localStorage.getItem('bcc_min_wpm')) || 20;
     
@@ -272,12 +275,10 @@
         
         let correctChars = 0, wrongWordsCount = 0, comparisonHTML = "";
         
-        // সঠিক ক্যারেক্টার গণনার নির্ভুল লজিক
         pWords.forEach((word, idx) => {
             const userWord = iWords[idx] || "";
             if (userWord === word && word !== "") {
                 comparisonHTML += `<span>${userWord} </span>`;
-                // শুধুমাত্র টাইপ করা ক্যারেক্টারই সঠিক হিসেবে গণ্য হবে
                 correctChars += word.length + (idx < iWords.length - 1 ? 1 : 0); 
             } else if (userWord !== "") {
                 wrongWordsCount++;
@@ -285,22 +286,18 @@
             }
         });
 
-        // ক্যারেক্টার সংখ্যা যেন টাইপ করা সংখ্যার চেয়ে বেশি না হয়
         if(correctChars > rawInput.length) correctChars = rawInput.length;
 
         const timeSpentSeconds = examDuration - timeLeft;
         const totalMins = examDuration / 60; 
         const wpm = ((rawInput.length / 5) / totalMins).toFixed(2);
         
-        // Accuracy এবং Error Rate ক্যালকুলেশন ফিক্স
-        let accuracy = 0;
-        if(rawInput.length > 0) {
-            accuracy = (correctChars / rawInput.length) * 100;
-        }
+        let accuracy = (rawInput.length > 0) ? (correctChars / rawInput.length) * 100 : 0;
         if(accuracy > 100) accuracy = 100;
 
-        let errorRate = (100 - accuracy).toFixed(2);
-        if(parseFloat(errorRate) < 0) errorRate = "0.00";
+        // ভুলের হার গণনা ফিক্স: টাইপ করা মোট শব্দের অনুপাতে ভুল শব্দ
+        let totalTypedWords = iWords.length;
+        let errorRate = (totalTypedWords > 0) ? (wrongWordsCount / totalTypedWords) * 100 : 0;
 
         const isBangla = /[\u0980-\u09FF]/.test(passage);
         document.getElementById('r-lang').innerText = isBangla ? "Bangla" : "English";
@@ -323,7 +320,7 @@
         document.getElementById('r-char').innerText = rawInput.length;
         document.getElementById('r-cor').innerText = correctChars;
         document.getElementById('r-wrong').innerText = wrongWordsCount;
-        document.getElementById('r-err').innerText = errorRate + "%";
+        document.getElementById('r-err').innerText = errorRate.toFixed(2) + "%";
         document.getElementById('user-compare-text').innerHTML = comparisonHTML;
         document.getElementById('original-text-result').innerText = passage;
         showPage('page-result');
