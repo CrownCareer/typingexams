@@ -132,11 +132,8 @@
                 <div>
                     <label>পরীক্ষার সময়:</label>
                     <select id="adm-time">
-                        <option value="300">১ মিনিট</option>
-                        <option value="300">৩ মিনিট</option>
                         <option value="300">৫ মিনিট</option>
-                        <option value="300">১০ মিনিট</option>
-                        <option value="600">২০ মিনিট</option>
+                        <option value="600">১০ মিনিট</option>
                     </select>
                 </div>
                 <div>
@@ -275,6 +272,7 @@
         
         let correctChars = 0, wrongWordsCount = 0, comparisonHTML = "";
         
+        // শব্দ এবং ক্যারেক্টার ভিত্তিক নির্ভুল গণনা
         pWords.forEach((word, idx) => {
             const userWord = iWords[idx] || "";
             if (userWord === word && word !== "") {
@@ -295,15 +293,14 @@
         let accuracy = (rawInput.length > 0) ? (correctChars / rawInput.length) * 100 : 0;
         if(accuracy > 100) accuracy = 100;
 
-        // ভুলের হার গণনা ফিক্স: টাইপ করা মোট শব্দের অনুপাতে ভুল শব্দ
-        let totalTypedWords = iWords.length;
-        let errorRate = (totalTypedWords > 0) ? (wrongWordsCount / totalTypedWords) * 100 : 0;
+        // ভুলের হার লজিক ফিক্স: (মোট ক্যারেক্টার - সঠিক ক্যারেক্টার) / মোট ক্যারেক্টার
+        let errorRate = (rawInput.length > 0) ? ((rawInput.length - correctChars) / rawInput.length) * 100 : 0;
 
         const isBangla = /[\u0980-\u09FF]/.test(passage);
         document.getElementById('r-lang').innerText = isBangla ? "Bangla" : "English";
 
         const statusTag = document.getElementById('r-status');
-        if(parseFloat(wpm) >= minWPM && parseFloat(errorRate) <= 5.00) {
+        if(parseFloat(wpm) >= minWPM && parseFloat(errorRate.toFixed(2)) <= 5.00) {
             statusTag.innerText = "PASS";
             statusTag.style.color = "var(--green)";
         } else {
